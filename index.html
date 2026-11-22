@@ -1,0 +1,558 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Repasses</title>
+
+<style>
+:root {
+  --azul:#17365d;
+  --azul2:#245b91;
+  --fundo:#f3f6fa;
+  --verde:#168653;
+  --vermelho:#d94343;
+  --texto:#263449;
+  --cinza:#718096;
+  --borda:#e5eaf0;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--fundo);
+  font-family:Arial, sans-serif;color:var(--texto)
+}
+header{
+  background:linear-gradient(120deg,#142d4d,#28659a);
+  color:white;padding:24px 4%;
+}
+header h1{margin:0;font-size:25px}
+header p{margin:8px 0 0;color:#dbeafe;font-size:14px}
+main{max-width:1400px;margin:auto;padding:22px}
+.topbar{
+  display:flex;justify-content:space-between;
+  align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px
+}
+button,select,input{
+  font:inherit;border:1px solid var(--borda);
+  border-radius:8px;padding:10px 13px;background:white
+}
+button{cursor:pointer;font-weight:bold}
+.btn{background:var(--azul2);color:white;border:0}
+.btn:hover{opacity:.9}
+.btn-light{color:var(--azul);background:white}
+.grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;margin-bottom:18px
+}
+.card,.panel{
+  background:white;border-radius:13px;padding:18px;
+  box-shadow:0 3px 12px #1b36520c;
+  border:1px solid var(--borda)
+}
+.card small{color:var(--cinza);font-size:12px}
+.card h2{margin:10px 0 4px;font-size:23px}
+.card p{margin:0;color:var(--cinza);font-size:12px}
+.panel{margin-bottom:18px}
+.panel h3{margin:0 0 15px;font-size:17px}
+.charts{
+  display:grid;grid-template-columns:1.3fr 1fr;gap:16px
+}
+canvas{width:100%;height:280px;display:block}
+.legend{font-size:12px;color:var(--cinza);margin-top:8px}
+.filters{
+ display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px
+}
+.filters input{flex:1;min-width:180px}
+.filters select{min-width:180px}
+.alerts{
+ display:grid;grid-template-columns:1fr 1fr;gap:14px
+}
+.alert-box{
+ padding:15px;border-radius:10px;background:#fff5f5;
+ border-left:4px solid var(--vermelho);margin-bottom:10px
+}
+.alert-box.up{background:#effaf4;border-color:var(--verde)}
+.alert-box strong{display:block;margin-bottom:5px}
+.percent{font-weight:bold;color:var(--vermelho)}
+.up .percent{color:var(--verde)}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:850px}
+th,td{
+ padding:12px 10px;text-align:right;
+ border-bottom:1px solid var(--borda);font-size:13px
+}
+th{background:#f5f8fc;color:#506078;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left;font-weight:bold}
+tr:hover td{background:#f8fbff}
+.down-text{color:var(--vermelho);font-weight:bold}
+.up-text{color:var(--verde);font-weight:bold}
+.neutral{color:var(--cinza)}
+.tag{
+ display:inline-block;border-radius:20px;
+ padding:4px 8px;font-size:11px;font-weight:bold
+}
+.tag.down{background:#ffe8e8;color:#b52f2f}
+.tag.up{background:#e1f6e9;color:#147545}
+.tag.zero{background:#edf0f4;color:#657386}
+.report-summary{
+ background:#f3f7fc;border-radius:10px;
+ padding:16px;line-height:1.7;font-size:14px
+}
+footer{text-align:center;color:var(--cinza);padding:20px;font-size:12px}
+.hidden{display:none!important}
+@media(max-width:850px){
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .charts{grid-template-columns:1fr}
+ .alerts{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+ main{padding:12px}
+ header{padding:20px 15px}
+ header h1{font-size:20px}
+ .grid{gap:8px}
+ .card{padding:13px}
+ .card h2{font-size:18px}
+ .panel{padding:13px}
+ button{font-size:12px}
+ canvas{height:230px}
+}
+@media print{
+ body{background:white}
+ header{background:#17365d!important;print-color-adjust:exact}
+ main{padding:10px}
+ .no-print{display:none!important}
+ .panel,.card{box-shadow:none;break-inside:avoid}
+ .table-wrap{overflow:visible}
+ table{min-width:0}
+ th,td{font-size:9px;padding:6px 3px}
+ canvas{max-height:230px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>PAINEL DE REPASSES</h1>
+  <p>Controle financeiro das congregações | Janeiro a Outubro</p>
+</header>
+
+<main>
+
+<div class="topbar">
+  <div>
+    <strong>Visão geral dos repasses</strong><br>
+    <small style="color:#718096">Acompanhamento e desempenho mensal</small>
+  </div>
+  <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" onclick="gerarRelatorio()">Gerar relatório</button>
+    <button onclick="window.print()">Imprimir / PDF</button>
+  </div>
+</div>
+
+<section class="grid">
+ <div class="card">
+  <small>TOTAL DE SETEMBRO</small>
+  <h2 id="totalSet">R$ 0,00</h2>
+  <p>Repasses registrados</p>
+ </div>
+ <div class="card">
+  <small>TOTAL DE OUTUBRO</small>
+  <h2 id="totalOut">R$ 0,00</h2>
+  <p>Repasses registrados</p>
+ </div>
+ <div class="card">
+  <small>VARIAÇÃO GERAL</small>
+  <h2 id="variacao">0%</h2>
+  <p>Outubro em relação a setembro</p>
+ </div>
+ <div class="card">
+  <small>CONGREGAÇÕES EM QUEDA</small>
+  <h2 id="qtdQueda" style="color:#d94343">0</h2>
+  <p>De setembro para outubro</p>
+ </div>
+</section>
+
+<section class="charts">
+ <div class="panel">
+  <h3>Evolução mensal dos repasses</h3>
+  <canvas id="graficoGeral"></canvas>
+  <div class="legend">Valores totais registrados em cada mês (R$).</div>
+ </div>
+ <div class="panel">
+  <h3>Resultado de setembro × outubro</h3>
+  <canvas id="graficoComparativo"></canvas>
+  <div class="legend">Comparação dos valores por congregação.</div>
+ </div>
+</section>
+
+<section class="panel">
+ <h3>Desempenho das congregações</h3>
+ <div class="filters no-print">
+  <input id="busca" placeholder="Pesquisar congregação..." oninput="atualizarTabela()">
+  <select id="filtro" onchange="atualizarTabela()">
+   <option value="todas">Todas as congregações</option>
+   <option value="queda">Somente em queda</option>
+   <option value="alta">Somente em alta</option>
+   <option value="estavel">Sem alteração</option>
+   <option value="zerada">Sem repasse nos dois meses</option>
+   <option value="incompleto">Dados incompletos</option>
+  </select>
+ </div>
+ <div class="table-wrap">
+  <table>
+   <thead>
+    <tr>
+     <th>Congregação</th>
+     <th>Setembro</th>
+     <th>Outubro</th>
+     <th>Diferença</th>
+     <th>Variação</th>
+     <th>Situação</th>
+    </tr>
+   </thead>
+   <tbody id="corpoTabela"></tbody>
+  </table>
+ </div>
+</section>
+
+<section class="alerts">
+ <div class="panel">
+  <h3 style="color:#c63737">Quedas identificadas</h3>
+  <div id="listaQuedas"></div>
+ </div>
+ <div class="panel">
+  <h3 style="color:#168653">Resultados positivos</h3>
+  <div id="listaAltas"></div>
+ </div>
+</section>
+
+<section class="panel">
+ <h3>Consultar uma congregação</h3>
+ <div class="filters no-print">
+  <select id="congregacaoSelecionada" onchange="desenharIndividual()">
+  </select>
+ </div>
+ <canvas id="graficoIndividual"></canvas>
+ <div id="resumoIndividual" class="report-summary"></div>
+</section>
+
+<section class="panel" id="relatorio">
+ <h3>Relatório gerencial</h3>
+ <div id="textoRelatorio" class="report-summary">
+  Clique em "Gerar relatório" para visualizar a análise dos resultados.
+ </div>
+</section>
+
+<section class="panel">
+ <h3>Histórico completo – Janeiro a Outubro</h3>
+ <div class="table-wrap">
+  <table>
+   <thead id="cabecalhoHistorico"></thead>
+   <tbody id="historico"></tbody>
+  </table>
+ </div>
+</section>
+
+<footer>
+ Sistema de acompanhamento financeiro | Dados referentes aos repasses informados
+</footer>
+</main>
+
+<script>
+// ========================================
+// DADOS DAS CONGREGAÇÕES
+// Valores em reais. null = não informado.
+// ========================================
+
+const meses = [
+ "Janeiro","Fevereiro","Março","Abril","Maio",
+ "Junho","Julho","Agosto","Setembro","Outubro"
+];
+
+const dados = {
+ "Imigrantes":[2219.52,2167.12,2268.14,1433.80,2305.21,2242.89,1625.60,2555.50,1589.44,1874.26],
+ "Itapuã 1":[4547.00,4774.91,6419.72,4983.64,6354.82,5108.00,4921.01,5011.71,4421.88,3770.46],
+ "Mutirão":[1571.73,2062.11,2373.94,1611.36,2363.91,1780.40,1497.78,1519.81,2120.74,1047.00],
+ "Paineiras":[646.76,814.58,661.30,879.06,1043.74,957.00,903.28,843.69,789.98,597.20],
+ "Palmeiras":[1109.30,1043.60,1191.60,1410.40,1627.60,1406.00,965.20,2438.90,1576.40,1712.40],
+ "Paquetá":[2088.07,1656.50,2879.20,2122.00,2516.73,2371.20,1722.66,1769.60,1466.40,1924.12],
+ "4 Leste":[1426.02,878.80,2094.17,1828.08,1843.41,1452.09,1892.54,1825.52,2008.99,1293.96],
+ "4 Sul":[726.12,708.64,1267.60,1108.80,1104.91,741.44,960.54,766.44,943.65,882.80],
+ "5 Oeste":[900.48,987.20,970.40,720.86,572.40,476.40,644.00,493.76,694.60,516.40],
+ "9 Norte":[2301.28,1819.74,2197.83,2103.02,2235.06,1782.64,2114.42,2184.56,1996.90,1244.96],
+ "10 Norte":[1585.68,1375.05,1520.46,1703.48,1444.86,746.32,973.86,1646.30,739.56,464.12],
+ "15 Norte":[1200,1142.40,1314.40,1555.28,1586.20,1390,1597.56,0,0,0],
+ "19 Norte":[1874.80,1223.68,1900.80,1211.68,1618.04,1459.14,1323.56,1473.10,1607.44,1328.60],
+ "Mucugê":[null,null,null,null,1328.60,1808.80,1677.20,null,null,null]
+};
+
+// Congregações mencionadas sem valores mensais fornecidos
+const semDados = [
+ "Boninal","Canjica","Córico Rico","Fazenda Posse",
+ "Seabra","São Gabriel","Caic","Nova Petrópolis",
+ "Bonsucesso","Água Fria","Itapuã 2"
+];
+
+const moeda = v => v.toLocaleString("pt-BR",{
+ style:"currency",currency:"BRL"
+});
+const numero = v => v.toLocaleString("pt-BR",{
+ minimumFractionDigits:2,maximumFractionDigits:2
+});
+
+const nomes = Object.keys(dados);
+const total = i => nomes.reduce((s,n)=>s+(dados[n][i]??0),0);
+
+function comparar(nome){
+ const s=dados[nome][8], o=dados[nome][9];
+ if(s===null || o===null) return {tipo:"incompleto"};
+ if(s===0 && o===0) return {tipo:"zerado",dif:0};
+ const dif=o-s;
+ const pct=s===0 ? null : dif/s*100;
+ return {
+  tipo:dif<0?"queda":dif>0?"alta":"estavel",
+  dif,pct,s,o
+ };
+}
+
+function desenharGrafico(id,series,labels,opcoes={}){
+ const canvas=document.getElementById(id);
+ const ctx=canvas.getContext("2d");
+ const w=canvas.clientWidth;
+ const h=canvas.clientHeight;
+ const dpr=window.devicePixelRatio||1;
+ canvas.width=w*dpr;canvas.height=h*dpr;
+ ctx.scale(dpr,dpr);
+ ctx.clearRect(0,0,w,h);
+
+ const max=Math.max(...series.flatMap(x=>x.valores),1)*1.15;
+ const esquerda=opcoes.individual?48:48;
+ const direita=12,topo=20,base=35;
+ const largura=w-esquerda-direita;
+ const altura=h-topo-base;
+
+ // Linhas de referência
+ ctx.font="10px Arial";
+ ctx.textAlign="right";
+ for(let i=0;i<=4;i++){
+  const y=topo+altura-i*altura/4;
+  ctx.strokeStyle="#e9eef4";
+  ctx.beginPath();ctx.moveTo(esquerda,y);ctx.lineTo(w-direita,y);ctx.stroke();
+  ctx.fillStyle="#718096";
+  ctx.fillText(opcoes.formato?opcoes.formato(max*i/4):Math.round(max*i/4),esquerda-6,y+3);
+ }
+
+ if(opcoes.barras){
+  const n=labels.length;
+  const grupo=largura/n;
+  const bw=Math.min(24,grupo*.28);
+  labels.forEach((l,i)=>{
+   series.forEach((s,j)=>{
+    const v=s.valores[i]??0;
+    const x=esquerda+i*grupo+grupo/2+(j===0?-bw:0);
+    const bh=v/max*altura;
+    ctx.fillStyle=s.cor;
+    ctx.fillRect(x,topo+altura-bh,bw-2,bh);
+   });
+   ctx.fillStyle="#657386";
+   ctx.textAlign="center";
+   ctx.fillText(l,esquerda+i*grupo+grupo/2, h-12);
+  });
+  return;
+ }
+
+ series.forEach(s=>{
+  ctx.beginPath();
+  ctx.strokeStyle=s.cor;
+  ctx.lineWidth=2.5;
+  let iniciado=false;
+  s.valores.forEach((v,i)=>{
+   if(v===null){iniciado=false;return}
+   const x=esquerda+(labels.length===1?largura/2:i*largura/(labels.length-1));
+   const y=topo+altura-v/max*altura;
+   if(!iniciado){ctx.moveTo(x,y);iniciado=true}
+   else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  s.valores.forEach((v,i)=>{
+   if(v===null)return;
+   const x=esquerda+(labels.length===1?largura/2:i*largura/(labels.length-1));
+   const y=topo+altura-v/max*altura;
+   ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);
+   ctx.fillStyle=s.cor;ctx.fill();
+  });
+ });
+ ctx.font="10px Arial";ctx.textAlign="center";
+ labels.forEach((l,i)=>{
+  const x=esquerda+(labels.length===1?largura/2:i*largura/(labels.length-1));
+  ctx.fillStyle="#657386";ctx.fillText(l,x,h-12);
+ });
+}
+
+function atualizarPainel(){
+ const s=total(8),o=total(9);
+ const variacao=s===0?0:(o-s)/s*100;
+ document.getElementById("totalSet").textContent=moeda(s);
+ document.getElementById("totalOut").textContent=moeda(o);
+ const el=document.getElementById("variacao");
+ el.textContent=(variacao>0?"+":"")+numero(variacao)+"%";
+ el.style.color=variacao<0?"#d94343":"#168653";
+ const quedas=nomes.filter(n=>comparar(n).tipo==="queda");
+ document.getElementById("qtdQueda").textContent=quedas.length;
+
+ desenharGrafico("graficoGeral",[
+  {valores:meses.map((_,i)=>total(i)),cor:"#245b91"}
+ ],meses.map(m=>m.slice(0,3)));
+
+ desenharGrafico("graficoComparativo",[
+  {valores:nomes.map(n=>dados[n][8]??0),cor:"#245b91"},
+  {valores:nomes.map(n=>dados[n][9]??0),cor:"#e18a32"}
+ ],nomes.map(n=>n.replace("Norte","N").replace("Oeste","O").replace("Leste","L")),{
+  barras:true
+ });
+}
+
+function atualizarTabela(){
+ const busca=document.getElementById("busca").value.toLowerCase();
+ const filtro=document.getElementById("filtro").value;
+ const corpo=document.getElementById("corpoTabela");
+ corpo.innerHTML="";
+
+ const lista=[...nomes,...semDados];
+ lista.forEach(nome=>{
+  if(!nome.toLowerCase().includes(busca))return;
+  const existe=!!dados[nome];
+  const c=existe?comparar(nome):{tipo:"incompleto"};
+  if(filtro!=="todas" && filtro!==c.tipo)return;
+  const s=existe?dados[nome][8]:null;
+  const o=existe?dados[nome][9]:null;
+  const dif=c.dif;
+  let situacao="Dados não informados";
+  let tag="zero";
+  if(c.tipo==="queda"){situacao="Em queda";tag="down"}
+  if(c.tipo==="alta"){situacao="Em alta";tag="up"}
+  if(c.tipo==="estavel"){situacao="Estável";tag="zero"}
+  if(c.tipo==="zerado"){situacao="Sem repasse";tag="zero"}
+  if(existe && c.tipo==="incompleto")situacao="Dados incompletos";
+
+  const tr=document.createElement("tr");
+  tr.innerHTML=`
+   <td>${nome}</td>
+   <td>${s===null?"—":moeda(s)}</td>
+   <td>${o===null?"—":moeda(o)}</td>
+   <td class="${dif<0?"down-text":dif>0?"up-text":"neutral"}">
+    ${dif===undefined?"—":(dif>0?"+":"")+moeda(dif)}
+   </td>
+   <td class="${c.pct<0?"down-text":c.pct>0?"up-text":"neutral"}">
+    ${c.pct===undefined||c.pct===null?"—":(c.pct>0?"+":"")+numero(c.pct)+"%"}
+   </td>
+   <td><span class="tag ${tag}">${situacao}</span></td>`;
+  corpo.appendChild(tr);
+ });
+}
+
+function atualizarAlertas(){
+ const quedas=nomes.filter(n=>comparar(n).tipo==="queda")
+  .sort((a,b)=>comparar(a).pct-comparar(b).pct);
+ const altas=nomes.filter(n=>comparar(n).tipo==="alta")
+  .sort((a,b)=>comparar(b).pct-comparar(a).pct);
+
+ function montar(lista,id,tipo){
+  document.getElementById(id).innerHTML=lista.length?lista.map(n=>{
+   const c=comparar(n);
+   return `<div class="alert-box ${tipo==="alta"?"up":""}">
+    <strong>${n}</strong>
+    <span>${moeda(c.s)} → ${moeda(c.o)}</span><br>
+    <span class="percent">${c.pct>0?"+":""}${numero(c.pct)}%</span>
+   </div>`;
+  }).join(""):"<p>Nenhuma ocorrência.</p>";
+ }
+ montar(quedas,"listaQuedas","queda");
+ montar(altas,"listaAltas","alta");
+}
+
+function preencherSelecao(){
+ const select=document.getElementById("congregacaoSelecionada");
+ select.innerHTML=nomes.map(n=>`<option>${n}</option>`).join("");
+}
+
+function desenharIndividual(){
+ const nome=document.getElementById("congregacaoSelecionada").value;
+ const valores=dados[nome];
+ desenharGrafico("graficoIndividual",[
+  {valores,cor:"#245b91"}
+ ],meses.map(m=>m.slice(0,3)),{individual:true});
+
+ const c=comparar(nome);
+ let mensagem="";
+ if(c.tipo==="queda")mensagem=`A congregação ${nome} apresentou uma queda de ${numero(Math.abs(c.pct))}% em outubro. A redução foi de ${moeda(Math.abs(c.dif))}.`;
+ else if(c.tipo==="alta")mensagem=`A congregação ${nome} apresentou crescimento de ${numero(c.pct)}% em outubro. O aumento foi de ${moeda(c.dif)}.`;
+ else if(c.tipo==="zerado")mensagem=`A congregação ${nome} não registrou repasses em setembro e outubro.`;
+ else if(c.tipo==="incompleto")mensagem=`Não existem dados completos para comparar setembro e outubro.`;
+ else mensagem=`A congregação ${nome} manteve o mesmo valor nos dois meses.`;
+
+ document.getElementById("resumoIndividual").innerHTML=`
+  <strong>${nome}</strong><br>${mensagem}<br>
+  Setembro: ${valores[8]===null?"Não informado":moeda(valores[8])}<br>
+  Outubro: ${valores[9]===null?"Não informado":moeda(valores[9])}`;
+}
+
+function gerarRelatorio(){
+ const s=total(8),o=total(9);
+ const variacao=(o-s)/s*100;
+ const quedas=nomes.filter(n=>comparar(n).tipo==="queda");
+ const altas=nomes.filter(n=>comparar(n).tipo==="alta");
+ const maiores=[...quedas].sort((a,b)=>comparar(a).pct-comparar(b).pct);
+ const sem=semDados.length;
+ document.getElementById("textoRelatorio").innerHTML=`
+  <strong>ANÁLISE FINANCEIRA – SETEMBRO E OUTUBRO</strong><br><br>
+  <strong>Total de setembro:</strong> ${moeda(s)}<br>
+  <strong>Total de outubro:</strong> ${moeda(o)}<br>
+  <strong>Variação geral:</strong>
+  <span class="${variacao<0?"down-text":"up-text"}">
+  ${variacao>0?"+":""}${numero(variacao)}%</span><br><br>
+  Foram identificadas <strong>${quedas.length} congregações em queda</strong>
+  e <strong>${altas.length} em crescimento</strong> entre os meses analisados.
+  <br><br>
+  <strong>Maiores quedas percentuais:</strong><br>
+  ${maiores.slice(0,5).map(n=>`${n}: ${numero(comparar(n).pct)}%`).join("<br>")}
+  <br><br>
+  <strong>Congregações com crescimento:</strong><br>
+  ${altas.map(n=>`${n}: +${numero(comparar(n).pct)}%`).join("<br>")||"Nenhuma."}
+  <br><br>
+  <strong>Observações:</strong><br>
+  ${sem} congregações da lista inicial estão sem valores mensais detalhados.
+  Mucugê também não possui registros para setembro e outubro.
+  Os dados não informados não foram considerados como zero.
+  <br><br>
+  <strong>Recomendação:</strong> priorizar o acompanhamento das congregações
+  com maiores quedas, verificar possíveis motivos das reduções e confirmar
+  os dados das congregações sem registros.
+ `;
+ document.getElementById("relatorio").scrollIntoView({behavior:"smooth"});
+}
+
+// Histórico
+document.getElementById("cabecalhoHistorico").innerHTML=
+ "<tr><th>Congregação</th>"+meses.map(m=>`<th>${m}</th>`).join("")+"</tr>";
+
+document.getElementById("historico").innerHTML=nomes.map(n=>
+ `<tr><td>${n}</td>`+dados[n].map(v=>
+ `<td>${v===null?"—":numero(v)}</td>`).join("")+"</tr>"
+).join("");
+
+atualizarPainel();
+atualizarTabela();
+atualizarAlertas();
+preencherSelecao();
+desenharIndividual();
+
+window.addEventListener("resize",()=>{
+ atualizarPainel();
+ desenharIndividual();
+});
+</script>
+</body>
+</html>
